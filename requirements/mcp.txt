@@ -1,0 +1,4 @@
+biopython>=1.85,<2
+numpy
+matplotlib>=3.8
+mcp>=1.2,<2

@@ -105,7 +105,32 @@ Look in `demo-results` for:
 - **`project.json`**, which you can open in namiyomi with **File > Import Previous Project** to inspect the traces.
 - **`summary.tsv`** with the assembly results and contigs that need review.
 
-Add `--review` to check flagged positions against their traces on your device and save the decisions to `review.tsv`. These steps require no API key or MCP setup. For CSV grouping and optional online AI review, see the [batch guide](docs/BATCH.md#command-line).
+Add `--review` to check flagged positions against their traces on your device and save the decisions to `review.tsv`. These steps require no API key or MCP setup (the [MCP review server](#review-and-trim-from-an-mcp-client) is described below). For CSV grouping and optional online AI review, see the [batch guide](docs/BATCH.md#command-line).
+
+### Review and trim from an MCP client
+
+This is a different feature from **AI Review**, and you do not need it to use AI Review. The table shows how they differ.
+
+| | **AI Review** (menu in the app) | **MCP review server** |
+| --- | --- | --- |
+| Who reviews | namiyomi's local rules, then optionally OpenAI, Claude or Gemini through **your API key** | An MCP client you already use, such as Claude Code or Claude Desktop, with no API key in namiyomi |
+| How it runs | Click **AI Review > Review Start** in the app | You ask the client in chat, for example "run namiyomi on my reads, review the flags, then trim the ends" |
+| What the AI model sees | Bases, quality scores and a short numeric signal excerpt near each flag | Sequences, file names and chromatogram images, through the tools below |
+| Setup | None | `pip install -r requirements/mcp.txt` and register `src/mcp_review_server.py` with the client |
+| Results | Written into the project and shown in the app | The same: written to a new project file that opens in the app, with flags the client left open shown in red |
+
+Use AI Review for a quick check inside the app. Use the MCP server when you want to work with the reads in a conversation: batch a folder, look at individual traces, and trim contig ends by a rule you describe. Both settle the clear flags with the same local trace rules first.
+
+1. **Install** (once): `python -m pip install -r requirements/mcp.txt`.
+2. **Register the server** with your client. For Claude Code:
+   ```sh
+   claude mcp add namiyomi-review -- /path/to/python /path/to/namiyomi/src/mcp_review_server.py
+   ```
+   Other clients take the same command and argument in their MCP settings.
+3. **Ask the client to work on a folder**, and give it an output folder that does not exist yet. It can run the batch, show flagged traces, and propose end trims. It changes nothing until you agree to a rule.
+4. **Open the result.** Edits are saved to a new `project.reviewed.json` with a `review_report.md`; your original project and FASTA stay untouched. Open it with **File > Import Previous Project**. Columns are numbered from 1, as in the app.
+
+The server makes no network calls itself, but the connected client sees the sequences and trace images it asks for, so register it only with a client you trust with your data. The smaller `src/mcp_server.py` is separate: it only reports anonymous quality counts and cannot edit or export anything. See the [batch guide](docs/BATCH.md#review-and-trim-from-an-mcp-client) for the full tool list.
 
 ### Find a sequence on either strand
 

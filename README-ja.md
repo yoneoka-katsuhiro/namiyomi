@@ -107,6 +107,31 @@ python src/batch.py --input demo --output demo-results
 
 コマンドの末尾に `--review` を足すと、端末内でフラッグの位置を波形と照合し、判定を `review.tsv` に記録します。ここまでの操作にAPIキーやMCPは不要です。CSVでのグループ指定やオンラインAIの使い方は、[一括処理ガイド（英語）](docs/BATCH.md#command-line)にあります。
 
+### MCPクライアントから確認・トリムする
+
+これは **AI Review** とは別の機能です。AI Reviewを使うのにMCPは必要ありません。違いを下の表にまとめます。
+
+| | **AI Review**（アプリのメニュー） | **MCPレビューサーバー** |
+| --- | --- | --- |
+| 確認する主体 | namiyomiのローカル規則。続いて、必要なら **ご自身のAPIキー** でOpenAI・Claude・Gemini | Claude CodeやClaude Desktopなど、すでに使っているMCPクライアント。namiyomiにAPIキーは不要 |
+| 使い方 | アプリで **AI Review > Review Start** をクリック | クライアントとの会話で依頼する（例：「このリードをnamiyomiで処理して、フラッグを確認し、末端をトリムして」） |
+| AIモデルが見るもの | 各フラッグ付近の塩基、クオリティ値、数値化した波形の抜粋 | 配列、ファイル名、波形画像（下記のツール経由） |
+| 準備 | 不要 | `pip install -r requirements/mcp.txt` を実行し、`src/mcp_review_server.py` をクライアントに登録 |
+| 結果 | プロジェクトに記録され、アプリに表示される | 同じ。新しいプロジェクトファイルに保存され、アプリで開ける。クライアントが判断を保留したフラッグは赤で表示 |
+
+アプリ内で手早く確認したいときはAI Review、会話しながらリードを扱いたいとき（フォルダの一括処理、個々の波形の確認、指定した規則での末端トリム）はMCPサーバーが向いています。どちらも、はじめにローカルの波形規則で明確な箇所を処理します。
+
+1. **インストール**（初回のみ）：`python -m pip install -r requirements/mcp.txt`
+2. **クライアントにサーバーを登録する。** Claude Codeの場合：
+   ```sh
+   claude mcp add namiyomi-review -- /path/to/python /path/to/namiyomi/src/mcp_review_server.py
+   ```
+   ほかのクライアントも、MCP設定に同じコマンドと引数を指定します。
+3. **フォルダの処理を依頼する。** まだ存在しない出力フォルダを指定してください。一括処理、フラッグ付き波形の確認、末端トリムの提案ができます。トリムの規則に同意するまで、何も変更しません。
+4. **結果を開く。** 編集は新しい `project.reviewed.json` と `review_report.md` に保存され、元のプロジェクトとFASTAは変更されません。**File > Import Previous Project** で開きます。列番号はアプリと同じく1から数えます。
+
+サーバー自体は通信を行いませんが、接続したクライアントは求めた配列や波形画像を見られます。データを任せてよいクライアントにだけ登録してください。小さい方の `src/mcp_server.py` は別物で、匿名の品質件数を返すだけで、編集や出力はできません。ツールの一覧は[一括処理ガイド（英語）](docs/BATCH.md#review-and-trim-from-an-mcp-client)を参照してください。
+
 ### 配列を検索する
 
 ![Find欄へ入力した配列と、その逆相補に一致する場所をオレンジ色で表示した画面。使用データは合成デモです。](docs/images/namiyomi-find-macos.png)
